@@ -5,7 +5,8 @@ import sys
 import logging
 
 import pytest
-from simtools.arguments import (SimulationParser, FlagParser, FlagRunner)
+from simtools.arguments import (SimulationParser, FlagParser, FlagRunner,
+                                positive_int, nonnegative_int)
 
 
 @pytest.fixture(params=['-v', '--verbosity'])
@@ -96,6 +97,37 @@ class TestSimulationParser(object):
         o = parser.parse_args()
         assert not hasattr(o, 'all')
 
+    def test_positive_int(self, monkeypatch):
+        '''Test the positive_int type checker.'''
+        argv = ['test_flag.py', '--positive_int', '10']
+        monkeypatch.setattr(sys, 'argv', argv)
+        parser = SimulationParser()
+        parser.add_argument('--positive_int', type=positive_int)
+        o = parser.parse_args()
+        assert o.positive_int == 10
+
+        argv = ['test_flag.py', '--positive_int', '0']
+        monkeypatch.setattr(sys, 'argv', argv)
+        parser = SimulationParser()
+        parser.add_argument('--positive_int', type=positive_int)
+        with pytest.raises(SystemExit):
+            o = parser.parse_args()
+
+    def test_nonnegative_int(self, monkeypatch):
+        '''Test the nonnegative_int type checker.'''
+        argv = ['test_flag.py', '--nonnegative_int', '0']
+        monkeypatch.setattr(sys, 'argv', argv)
+        parser = SimulationParser()
+        parser.add_argument('--nonnegative_int', type=nonnegative_int)
+        o = parser.parse_args()
+        assert o.nonnegative_int == 0
+
+        argv = ['test_flag.py', '--nonnegative_int', '-1']
+        monkeypatch.setattr(sys, 'argv', argv)
+        parser = SimulationParser()
+        parser.add_argument('--nonnegative_int', type=nonnegative_int)
+        with pytest.raises(SystemExit):
+            o = parser.parse_args()
 
 class TestFlagRunner():
     '''Test aspects of FlagRunner/FlagParser classes.'''
