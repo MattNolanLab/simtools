@@ -5,7 +5,7 @@ import sys
 import logging
 
 import pytest
-from pysimlets.arguments import (SimulationParser, FlagParser, FlagRunner)
+from simtools.arguments import (SimulationParser, FlagParser, FlagRunner)
 
 
 @pytest.fixture(params=['-v', '--verbosity'])
