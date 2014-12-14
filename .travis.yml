@@ -1,0 +1,15 @@
+language: python
+
+python:
+  - "2.7"
+  - "3.4"
+
+before_install:
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then export TOXENV="py27"; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.4' ]]; then export TOXENV="py34"; fi
+
+install:
+  - pip install tox
+
+script:
+  - tox
