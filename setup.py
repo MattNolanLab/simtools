@@ -4,10 +4,17 @@ try:
 except ImportError:
     from distutils.core import setup
 
+all_packages = ['simtools',
+                'simtools.plotting']
+
 setup(name='simtools',
       version='0.1.0',
       description='Python simulation and analysis helpers.',
       author='Lukas Solanka',
       author_email='lsolanka@gmail.com',
-      packages=['simtools'])
+      packages=all_packages,
+      install_requires=['numpy >= 1.8.1',
+                        'matplotlib >= 1.3.1',
+                        'configobj >= 5.0.6'],
+      )
 
