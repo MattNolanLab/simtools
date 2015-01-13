@@ -1,0 +1,4 @@
+** 0.1.0 (unreleased) **
+
+* Add argument type checkers for positive_int, nonnegative_int and
+  positive_float
