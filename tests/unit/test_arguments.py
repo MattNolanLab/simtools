@@ -6,7 +6,7 @@ import logging
 
 import pytest
 from simtools.arguments import (SimulationParser, FlagParser, FlagRunner,
-                                positive_int, nonnegative_int)
+                                positive_int, nonnegative_int, positive_float)
 
 
 @pytest.fixture(params=['-v', '--verbosity'])
@@ -78,6 +78,17 @@ def prepare_parser_with_flags(parsercls=SimulationParser, flagv=None):
     return parser
 
 
+@pytest.fixture(scope='module', params=[(10.0, True),
+                                        (10, True),
+                                        (-10.0, False),
+                                        (-10, False),
+                                        (0, False),
+                                        (0., False)
+                                       ])
+def fix_positive_float_data(request):
+    '''Generate test data for positive floats.'''
+    return request.param
+
 class TestSimulationParser(object):
     '''Test aspects of the SimulationParser class.'''
 
@@ -128,6 +139,21 @@ class TestSimulationParser(object):
         parser.add_argument('--nonnegative_int', type=nonnegative_int)
         with pytest.raises(SystemExit):
             o = parser.parse_args()
+
+    def test_positive_float(self, monkeypatch, fix_positive_float_data):
+        '''Test the positive_float type checker.'''
+        test_data, is_good = fix_positive_float_data
+        argv = ['test_flag.py', '--positive_float', str(test_data)]
+        monkeypatch.setattr(sys, 'argv', argv)
+        parser = SimulationParser()
+        parser.add_argument('--positive_float', type=positive_float)
+        if is_good:
+            o = parser.parse_args()
+            assert o.positive_float == test_data
+        else:
+            with pytest.raises(SystemExit):
+                o = parser.parse_args()
+
 
 class TestFlagRunner():
     '''Test aspects of FlagRunner/FlagParser classes.'''
