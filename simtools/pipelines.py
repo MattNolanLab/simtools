@@ -64,5 +64,9 @@ class Pipeline(object):
         '''
         for stage in self._stages:
             data = stage(data)
+            if not isinstance(data, PipelineData):
+                raise TypeError('All pipeline stages must strictly return a '
+                                'value of type '
+                                'simtools.pipelines.PipelineData.')
         return data
 

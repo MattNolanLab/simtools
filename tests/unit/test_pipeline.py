@@ -1,6 +1,7 @@
 '''Test the pipeline module.'''
 from __future__ import absolute_import, print_function, division
 
+import pytest
 from simtools.pipelines import PipelineStage, Pipeline, PipelineData
 
 
@@ -13,6 +14,7 @@ class Increment(PipelineStage):
 
 
 def function_stage(data_in):
+    '''A pipeline stage that is a function.'''
     print(data_in.items['num'])
     data_in.items['num'] += 1
     return data_in
@@ -58,3 +60,23 @@ class TestPipeline(object):
         data = pipeline.run(data)
 
         assert data.items['num'] == 2
+
+    def test_return_type(self):
+        '''Test that a wrong return value is detected.'''
+        def no_return_value(data_in):
+            '''Does not return anything.'''
+            print(data_in)
+
+        def wrong_return_type(data_in):
+            '''Wrong return type for the pipeline.'''
+            return 'Wrong type'
+
+        pipeline = Pipeline()
+        pipeline.append(no_return_value)
+        with pytest.raises(TypeError):
+            pipeline.run(PipelineData())
+
+        pipeline = Pipeline()
+        pipeline.append(wrong_return_type)
+        with pytest.raises(TypeError):
+            pipeline.run(PipelineData())
