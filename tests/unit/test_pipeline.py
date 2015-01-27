@@ -12,6 +12,12 @@ class Increment(PipelineStage):
         return data_in
 
 
+def function_stage(data_in):
+    print(data_in.items['num'])
+    data_in.items['num'] += 1
+    return data_in
+
+
 class TestPipeline(object):
     '''Test the pipeline class.'''
 
@@ -39,3 +45,16 @@ class TestPipeline(object):
         self._test(1)
         self._test(2)
         self._test(10)
+
+    def test_stage_as_function(self):
+        '''Test the pipeline when only a simple function is added into the list
+        of stages.'''
+        pipeline = Pipeline()
+        pipeline.append(function_stage)
+        pipeline.append(Increment())
+
+        data = PipelineData()
+        data.items['num'] = 0
+        data = pipeline.run(data)
+
+        assert data.items['num'] == 2
