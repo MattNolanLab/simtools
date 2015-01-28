@@ -106,6 +106,17 @@ class TestEnvironment(object):
         def run_all(self, *args, **kwargs):
             print(self.myc['number'])
 
+    class TestArguments(Computation):
+        '''Require a single positional argument before *args, and **kwargs.'''
+        def __init__(self, my_param, *args, **kwargs):
+            self.my_param = my_param
+            self.kwarg = kwargs.pop('kwarg')
+            super(TestEnvironment.TestArguments, self).__init__(*args, **kwargs)
+
+        def run_all(self, *args, **kwargs):
+            print(self.my_param)
+            print(self.kwarg)
+
     def test_config(self):
         '''Test config correctness.'''
         config = ConfigObj({'test' : 10})
@@ -140,3 +151,16 @@ class TestEnvironment(object):
         env.run()
         out, _ = capsys.readouterr()
         assert out == "1\n2\n3\n4\n"
+
+    def test_extra_arguments(self, capsys):
+        '''Test that extra arguments to Computation subclasses are handled
+        correctly.
+        '''
+        env = Environment(ConfigObj())
+        my_param = 3
+        env.register_class(self.TestArguments, None, True,
+                           my_param, kwarg=10)
+        env.run()
+        out, _ = capsys.readouterr()
+        assert out == "3\n10\n"
+

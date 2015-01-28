@@ -10,9 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class Generator(object):
-    def __init__(self, cls, config):
+    def __init__(self, cls, config, obj_args, obj_kwargs):
         self.cls = cls
         self.config = config
+        self.obj_args = obj_args
+        self.obj_kwargs = obj_kwargs
 
 
 class Environment(object):
@@ -41,7 +43,7 @@ class Environment(object):
         new_config.merge(self.config.dict())
         return new_config
 
-    def register_class(self, cls, config=None, merge_in=True):
+    def register_class(self, cls, config=None, merge_in=True, *args, **kwargs):
         '''Register computation class with the environment.
         This creates a list of computation classes together with their
         configuration files. These will be then instantiated during a call to
@@ -51,6 +53,10 @@ class Environment(object):
         ----------
         cls : FigurePlotter
             Plotter class to register
+        *args : any positional arguments to pass on to the computation class.
+            The class ``cls`` will receive the arguments in the form of
+            ```cls(*args, *config_args, **kwargs)``` and must implement its
+            ``__init__`` method accordingly.
         config  : ConfigObj
             User-defined configuration
         merge_in : bool
@@ -68,7 +74,7 @@ class Environment(object):
         else:
             obj_config = self.config
 
-        self._generators.append(Generator(cls, obj_config))
+        self._generators.append(Generator(cls, obj_config, args, kwargs))
 
     def register_plotter(self, plotter_cls, config=None, merge_in=True):
         '''Register plotter class with the environment.
@@ -92,7 +98,8 @@ class Environment(object):
     def run(self):
         '''Run everything.'''
         for g in self._generators:
-            instance = g.cls(g.config, self)
+            arg_list = g.obj_args + (g.config, self)
+            instance = g.cls(*arg_list, **g.obj_kwargs)
             instance.run_all()
 
 
