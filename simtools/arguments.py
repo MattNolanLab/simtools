@@ -129,3 +129,12 @@ def positive_float(arg):
         msg = '%s is not a positive float' % arg
         raise argparse.ArgumentTypeError(msg)
     return value
+
+
+def nonnegative_float(arg):
+    '''A type checker that accepts only non-negative floats.'''
+    value = float(arg)
+    if value < 0.:
+        msg = '%s is not a non-negative floag' % arg
+        raise argparse.ArgumentTypeError(msg)
+    return value
