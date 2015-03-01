@@ -1,29 +1,15 @@
-#
-#   hdf5_storage.py
-#
-#   Data storage using the HDF5 library (and h5py currently)
-#
-#       Copyright (C) 2012  Lukas Solanka <l.solanka@sms.ed.ac.uk>
-#       
-#       This program is free software: you can redistribute it and/or modify
-#       it under the terms of the GNU General Public License as published by
-#       the Free Software Foundation, either version 3 of the License, or
-#       (at your option) any later version.
-#       
-#       This program is distributed in the hope that it will be useful,
-#       but WITHOUT ANY WARRANTY; without even the implied warranty of
-#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#       GNU General Public License for more details.
-#       
-#       You should have received a copy of the GNU General Public License
-#       along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+'''Data storage using the HDF5 library (and h5py currently)'''
+from __future__ import absolute_import, print_function, division
+
 from collections import MutableMapping, MutableSequence
 import logging
 
 import numpy as np
 import h5py
-from interface import DataStorage
+from six import iteritems
+from six.moves import xrange
+
+from .interface import DataStorage
 
 
 modLogger = logging.getLogger(__name__)
@@ -58,7 +44,7 @@ class HDF5DataStorage(DataStorage):
 
     Also, the following might have unexpected results, if the list stored in
     the HDF5 file is a compound list::
-        
+
         1. >>> tmp = d['listKey']  # tmp now contains a shallow copy of the list
         3. >>> d['anotherKey'] = tmp
 
@@ -164,7 +150,7 @@ class HDF5DataStorage(DataStorage):
             if (isinstance(value, MutableMapping)):
                 newGrp = grp.create_group(name)
                 newGrp.attrs['type'] = 'dict'
-                for k, v in value.iteritems():
+                for k, v in iteritems(value):
                     self._createDataMember(k, v, newGrp)
             elif (isinstance(value, MutableSequence)):
                 newGrp = grp.create_group(name)
@@ -185,7 +171,7 @@ class HDF5DataStorage(DataStorage):
                             data=value, maxshape=mxShape, chunks=chunks,
                             compression="gzip")
         except TypeError:
-            print "Could not create a data member %s" % name
+            print("Could not create a data member %s" % name)
             raise
 
 
@@ -228,7 +214,7 @@ class HDF5MapStorage(HDF5DataStorage, MutableMapping):
 
     def __init__(self, fileObj, grp):
         HDF5DataStorage.__init__(self, fileObj, grp)
-       
+
     def __setitem__(self, key, value):
         if (key in self._group):
             del self._group[key] # TODO: this is costly operation
@@ -278,7 +264,7 @@ class HDF5MapStorage(HDF5DataStorage, MutableMapping):
             else:
                 self[firstKey] = {}
                 self[firstKey].setItemChained(keyTuple[1:], value,
-                        overwriteLast=overwriteLast) 
+                        overwriteLast=overwriteLast)
 
 
 
@@ -290,7 +276,7 @@ class HDF5ListStorage(HDF5DataStorage, MutableSequence):
     '''
     def __init__(self, fileObj, grp):
         HDF5DataStorage.__init__(self, fileObj, grp)
-       
+
     def __setitem__(self, index, value):
         if (isinstance(index, slice)):
             raise TypeError('Slicing is not supported!')

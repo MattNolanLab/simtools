@@ -1,29 +1,12 @@
-#
-#   interface.py
-#
-#   Immplementation independent data storage interface classes (base class(es)).
-#
-#       Copyright (C) 2012  Lukas Solanka <l.solanka@sms.ed.ac.uk>
-#       
-#       This program is free software: you can redistribute it and/or modify
-#       it under the terms of the GNU General Public License as published by
-#       the Free Software Foundation, either version 3 of the License, or
-#       (at your option) any later version.
-#       
-#       This program is distributed in the hope that it will be useful,
-#       but WITHOUT ANY WARRANTY; without even the implied warranty of
-#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#       GNU General Public License for more details.
-#       
-#       You should have received a copy of the GNU General Public License
-#       along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-
+'''Immplementation independent data storage interface classes (base
+class(es)).
+'''
+from __future__ import absolute_import, print_function, division
 
 class DataStorage(object):
     '''
     Class for saving and loading data structures transparently.
-    
+
     Use this interface to access the data manipulation routines. This should be
     independent of the underlying data format.
 
@@ -43,14 +26,14 @@ class DataStorage(object):
         '''
         Given the file Path, return the DataStorage object with the correct
         implementation, inferred from the filePath extension.
-        
+
         filePath
             Full path to the filename to open
         mode='w'
             File mode. The default is to overwrite the old file. Use 'a' to
             append.
         '''
-        import hdf5_storage
+        from . import hdf5_storage
         return hdf5_storage.HDF5DataStorage.factory(filePath, mode=mode)
 
 
