@@ -1,25 +1,15 @@
-'''
-The :mod:`~test.test_data_storage` module defines a set of classes for unit
-testing of the most important functions and classes of this package.  The
-module is currently based on the unittest module.
+'''Tests of the simtools.storage package.'''
 
-A list of currently supported tests:
-
-.. autosummary::
-'''
-
-import unittest
 import numpy as np
 import collections
 import numbers
 
+import pytest
 from simtools.storage import DataStorage
 
 notImplMsg = "Not implemented"
 
-##############################################################################
-class TestHDF5Storage(unittest.TestCase):
-
+class TestHDF5Storage(object):
     def getItem(self, d, key):
         return d[key]
 
@@ -31,10 +21,9 @@ class TestHDF5Storage(unittest.TestCase):
         test_1d_array = np.arange(1000000)
         test_2d_array = np.random.rand(100, 100)
         test_list     = [1, 2, 3, 4]
-        test_dict     = dict(
-                int=123,
-                float=111.1,
-                list=test_list)
+        test_dict     = dict(int=123,
+                             float=111.1,
+                             list=test_list)
 
         ds['int']      = test_int
         ds['float']    = test_float
@@ -44,57 +33,66 @@ class TestHDF5Storage(unittest.TestCase):
         ds['dict']     = test_dict
 
         # Test return types
-        self.assertTrue(isinstance(ds['int'], numbers.Integral))
-        self.assertTrue(isinstance(ds['float'], float))
-        self.assertTrue(isinstance(ds['1d_array'], np.ndarray))
-        self.assertTrue(isinstance(ds['2d_array'], np.ndarray))
-        self.assertTrue(isinstance(ds['list'], collections.MutableSequence))
-        self.assertTrue(isinstance(ds['dict'], collections.MutableMapping))
+        assert isinstance(ds['int'], numbers.Integral)
+        assert isinstance(ds['float'], float)
+        assert isinstance(ds['1d_array'], np.ndarray)
+        assert isinstance(ds['2d_array'], np.ndarray)
+        assert isinstance(ds['list'], collections.MutableSequence)
+        assert isinstance(ds['dict'], collections.MutableMapping)
 
         # Test values of basic types
-        self.assertEqual(ds['int'], test_int)
-        self.assertEqual(ds['float'], test_float)
-        self.assertTrue(np.all(ds['1d_array'] == test_1d_array))
-        self.assertTrue(np.all(ds['2d_array'] == test_2d_array))
-        self.assertEqual(ds['list'], test_list)
-        self.assertEqual(ds['dict'], test_dict)
+        assert ds['int'] == test_int
+        assert ds['float'] == test_float
+        assert np.all(ds['1d_array'] == test_1d_array)
+        assert np.all(ds['2d_array'] == test_2d_array)
+        assert ds['list'] == test_list
+        assert ds['dict'] == test_dict
 
         ds.flush()
 
         # Test delete
-        del(ds['int'])
-        self.assertRaises(KeyError, self.getItem, ds, 'int')
-        del(ds['float'])
-        self.assertRaises(KeyError, self.getItem, ds, 'float')
-        del(ds['1d_array'])
-        self.assertRaises(KeyError, self.getItem, ds, '1d_array')
-        del(ds['2d_array'])
-        self.assertRaises(KeyError, self.getItem, ds, '2d_array')
-        del(ds['list'])
-        self.assertRaises(KeyError, self.getItem, ds, 'list')
-        del(ds['dict'])
-        self.assertRaises(KeyError, self.getItem, ds, 'dict')
+        del ds['int']
+        with pytest.raises(KeyError):
+            self.getItem(ds, 'int')
+
+        del ds['float']
+        with pytest.raises(KeyError):
+            self.getItem(ds, 'float')
+
+        del ds['1d_array']
+        with pytest.raises(KeyError):
+            self.getItem(ds, '1d_array')
+
+        del ds['2d_array']
+        with pytest.raises(KeyError):
+            self.getItem(ds, '2d_array')
+
+        del ds['list']
+        with pytest.raises(KeyError):
+            self.getItem(ds, 'list')
+
+        del ds['dict']
+        with pytest.raises(KeyError):
+            self.getItem(ds, 'dict')
 
         ds.close()
 
         # ds should be empty now
         ds = DataStorage.open('test_basic_types.h5', 'r')
-        self.assertEqual(len(ds), 0)
+        assert len(ds) == 0
 
         ds.close()
-
 
     def test_lists(self):
         def appendListAndTest(ds, key, test_l, item):
             ds[key].append(item)
             test_l.append(item)
-            self.assertEqual(test_l, ds[key])
+            assert test_l == ds[key]
 
         ds = DataStorage.open('test_lists.h5', 'w')
 
-        d1 = {
-                "hola" : [10, 20, 30],
-                "str" : "This is a test string"}
+        d1 = {"hola" : [10, 20, 30],
+              "str" : "This is a test string"}
 
         test_list = [1, 2, d1]
         ds['list'] = test_list
@@ -107,8 +105,6 @@ class TestHDF5Storage(unittest.TestCase):
         appendListAndTest(ds, 'list', test_list, dict(a=10, b=[1, 2, 3]))
         ds.close()
 
-
-
     def test_iterator(self):
         ds = DataStorage.open('test_iterator.h5', 'w')
 
@@ -117,17 +113,15 @@ class TestHDF5Storage(unittest.TestCase):
 
         it1 = 0
         for val1 in ds['list']:
-            self.assertEqual(val1, test_list[it1])
+            assert val1 == test_list[it1]
             it1 += 1
 
             it2 = 0
             for val2 in ds['list']:
-                self.assertEqual(val2, test_list[it2])
+                assert val2 == test_list[it2]
                 it2 += 1
 
         ds.close()
-
-
 
     def test_empty_arr(self):
         arr = np.array([])
@@ -137,43 +131,39 @@ class TestHDF5Storage(unittest.TestCase):
         ds.close()
 
         ds = DataStorage.open('test_empty_arr.h5', 'r')
-        self.assertTrue(np.all(arr == ds['empty']))
-        self.assertEqual(len(ds['empty']), 0)
-
+        assert np.all(arr == ds['empty'])
+        assert len(ds['empty']) == 0
 
     def test_chained_getter(self):
-        test_dict     = dict(
-                int=123,
-                float=111.1,
-                list=[1, 2, 3, dict(
-                    a='blabla',
-                    b=10,
-                    c=np.random.rand(10))])
+        test_dict = dict(int=123,
+                         float=111.1,
+                         list=[1, 2, 3, dict(
+                             a='blabla',
+                             b=10,
+                             c=np.random.rand(10))])
 
         ds = DataStorage.open('test_chained_getter.h5', 'w')
         ds['nested'] = test_dict
 
         ds_nested = ds['nested']
-        self.assertEqual(ds_nested.getItemChained(('int',)), test_dict['int'])
-        self.assertEqual(ds_nested.getItemChained(('list', 0)),
-                test_dict['list'][0])
-        self.assertEqual(ds_nested.getItemChained(('list', 3, 'a')),
+        assert ds_nested.getItemChained(('int',)) == test_dict['int']
+        assert ds_nested.getItemChained(('list', 0)) == test_dict['list'][0]
+        assert (ds_nested.getItemChained(('list', 3, 'a')) ==
                 test_dict['list'][3]['a'])
 
         # The same test but with a list as an index
-        self.assertEqual(ds_nested.getItemChained(['list', 3, 'a']),
+        assert (ds_nested.getItemChained(['list', 3, 'a']) ==
                 test_dict['list'][3]['a'])
 
         ds.close()
-
 
     def test_chained_setter(self):
         def testChain(ds, keyList, testValue):
             val = ds
             for key in keyList[0:-1]:
                 val = val[key]
-                self.assertTrue(isinstance(val, collections.MutableMapping))
-            self.assertEqual(val[keyList[-1]], testValue)
+                assert isinstance(val, collections.MutableMapping)
+            assert val[keyList[-1]] == testValue
 
         keyList = ['a', 'b', 'c', 'd']
         testValue = [1, 2, 3, 4]
@@ -207,6 +197,8 @@ class TestHDF5Storage(unittest.TestCase):
         testChain(ds, singleList, otherTestValue)
 
         # Test using getItemChained()
-        self.assertEqual(ds.getItemChained(keyList), newTestValue)
-        self.assertEqual(ds.getItemChained(otherKeyList), otherTestValue)
-        self.assertEqual(ds.getItemChained(singleList), otherTestValue)
+        assert ds.getItemChained(keyList) == newTestValue
+        assert ds.getItemChained(otherKeyList) == otherTestValue
+        assert ds.getItemChained(singleList) == otherTestValue
+
+        ds.close()
