@@ -9,12 +9,17 @@ from simtools.storage import DataStorage
 
 notImplMsg = "Not implemented"
 
+def open_storage(tmpdir, file_name, mode):
+    '''Open the data storage in a temporary directory.'''
+    return DataStorage.open(str(tmpdir.join('test_basic_types.h5')), mode)
+
+
 class TestHDF5Storage(object):
     def getItem(self, d, key):
         return d[key]
 
-    def test_basic_types(self):
-        ds = DataStorage.open('test_basic_types.h5', 'w')
+    def test_basic_types(self, tmpdir):
+        ds = open_storage(tmpdir, 'test_basic_types.h5', 'w')
 
         test_int      = 124
         test_float    = 0.1
@@ -49,6 +54,13 @@ class TestHDF5Storage(object):
         assert ds['dict'] == test_dict
 
         ds.flush()
+        len_saved_ds = len(ds)
+        ds.close()
+
+        # Re-open and test for data
+        ds = open_storage(tmpdir, 'test_basic_types.h5', 'r+')
+        assert len(ds) != 0
+        assert len(ds) == len_saved_ds
 
         # Test delete
         del ds['int']
@@ -78,18 +90,18 @@ class TestHDF5Storage(object):
         ds.close()
 
         # ds should be empty now
-        ds = DataStorage.open('test_basic_types.h5', 'r')
+        ds = open_storage(tmpdir, 'test_basic_types.h5', 'r')
         assert len(ds) == 0
 
         ds.close()
 
-    def test_lists(self):
+    def test_lists(self, tmpdir):
         def appendListAndTest(ds, key, test_l, item):
             ds[key].append(item)
             test_l.append(item)
             assert test_l == ds[key]
 
-        ds = DataStorage.open('test_lists.h5', 'w')
+        ds = open_storage(tmpdir, 'test_lists.h5', 'w')
 
         d1 = {"hola" : [10, 20, 30],
               "str" : "This is a test string"}
@@ -98,15 +110,15 @@ class TestHDF5Storage(object):
         ds['list'] = test_list
         ds.close()
 
-        ds = DataStorage.open('test_lists.h5', 'r+')
+        ds = open_storage(tmpdir, 'test_lists.h5', 'r+')
         appendListAndTest(ds, 'list', test_list, 10)
         appendListAndTest(ds, 'list', test_list, 23.5)
         appendListAndTest(ds, 'list', test_list, [1, 2, 3])
         appendListAndTest(ds, 'list', test_list, dict(a=10, b=[1, 2, 3]))
         ds.close()
 
-    def test_iterator(self):
-        ds = DataStorage.open('test_iterator.h5', 'w')
+    def test_iterator(self, tmpdir):
+        ds = open_storage(tmpdir, 'test_iterator.h5', 'w')
 
         test_list = list(np.arange(100))
         ds['list'] = test_list
@@ -123,26 +135,25 @@ class TestHDF5Storage(object):
 
         ds.close()
 
-    def test_empty_arr(self):
+    def test_empty_arr(self, tmpdir):
         arr = np.array([])
 
-        ds = DataStorage.open('test_empty_arr.h5', 'w')
+        ds = open_storage(tmpdir, 'test_empty_arr.h5', 'w')
         ds['empty'] = arr
         ds.close()
 
-        ds = DataStorage.open('test_empty_arr.h5', 'r')
+        ds = open_storage(tmpdir, 'test_empty_arr.h5', 'r')
         assert np.all(arr == ds['empty'])
         assert len(ds['empty']) == 0
 
-    def test_chained_getter(self):
+    def test_chained_getter(self, tmpdir):
         test_dict = dict(int=123,
                          float=111.1,
-                         list=[1, 2, 3, dict(
-                             a='blabla',
-                             b=10,
-                             c=np.random.rand(10))])
+                         list=[1, 2, 3, dict(a='blabla',
+                                             b=10,
+                                             c=np.random.rand(10))])
 
-        ds = DataStorage.open('test_chained_getter.h5', 'w')
+        ds = open_storage(tmpdir, 'test_chained_getter.h5', 'w')
         ds['nested'] = test_dict
 
         ds_nested = ds['nested']
@@ -157,7 +168,7 @@ class TestHDF5Storage(object):
 
         ds.close()
 
-    def test_chained_setter(self):
+    def test_chained_setter(self, tmpdir):
         def testChain(ds, keyList, testValue):
             val = ds
             for key in keyList[0:-1]:
@@ -167,7 +178,7 @@ class TestHDF5Storage(object):
 
         keyList = ['a', 'b', 'c', 'd']
         testValue = [1, 2, 3, 4]
-        ds = DataStorage.open('test_chained_setter.h5', 'w')
+        ds = open_storage(tmpdir, 'test_chained_setter.h5', 'w')
 
 
         # Initial test
