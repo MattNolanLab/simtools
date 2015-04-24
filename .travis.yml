@@ -11,6 +11,7 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install -qq libatlas-dev libatlas-base-dev liblapack-dev gfortran
   - sudo apt-get install -qq swig libfreetype6-dev libpng12-dev graphviz
+  - sudo apt-get install -qq libhdf5-serial-dev
 
   - echo "++++++++++++ Install conda with numpy and matplotlib ++++++++++++++++++"
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
