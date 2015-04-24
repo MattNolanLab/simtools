@@ -14,9 +14,33 @@ def open_storage(tmpdir, file_name, mode):
     return DataStorage.open(str(tmpdir.join('test_basic_types.h5')), mode)
 
 
+# TODO:
+#
+# - set/get_item_chained - all keys in keyTuple must be strings
 class TestHDF5Storage(object):
     def getItem(self, d, key):
         return d[key]
+
+    def test_open_nonexistent(self, tmpdir):
+        with pytest.raises(IOError):
+            ds = open_storage(tmpdir, 'nonexistent.h5', 'r')
+            ds.close()
+
+        with pytest.raises(IOError):
+            ds = open_storage(tmpdir, 'nonexistent.h5', 'r+')
+            ds.close()
+
+        ds = open_storage(tmpdir, 'nonexistent.h5', 'w')
+        ds.close()
+
+        with pytest.raises(IOError):
+            ds = open_storage(tmpdir, 'nonexistent.h5', 'w-')
+            ds.close()
+
+    def test_append(self, tmpdir):
+        # This assumes pytest gives us empty directory
+        ds = open_storage(tmpdir, 'nonexistent.h5', 'a')
+        ds.close()
 
     def test_basic_types(self, tmpdir):
         ds = open_storage(tmpdir, 'test_basic_types.h5', 'w')
@@ -157,13 +181,13 @@ class TestHDF5Storage(object):
         ds['nested'] = test_dict
 
         ds_nested = ds['nested']
-        assert ds_nested.getItemChained(('int',)) == test_dict['int']
-        assert ds_nested.getItemChained(('list', 0)) == test_dict['list'][0]
-        assert (ds_nested.getItemChained(('list', 3, 'a')) ==
+        assert ds_nested.get_item_chained(('int',)) == test_dict['int']
+        assert ds_nested.get_item_chained(('list', 0)) == test_dict['list'][0]
+        assert (ds_nested.get_item_chained(('list', 3, 'a')) ==
                 test_dict['list'][3]['a'])
 
         # The same test but with a list as an index
-        assert (ds_nested.getItemChained(['list', 3, 'a']) ==
+        assert (ds_nested.get_item_chained(['list', 3, 'a']) ==
                 test_dict['list'][3]['a'])
 
         ds.close()
@@ -182,34 +206,34 @@ class TestHDF5Storage(object):
 
 
         # Initial test
-        ds.setItemChained(keyList, testValue)
+        ds.set_item_chained(keyList, testValue)
         testChain(ds, keyList, testValue)
 
         # Over-write test
         newTestValue = 'Over-write test string'
-        ds.setItemChained(keyList, newTestValue)
+        ds.set_item_chained(keyList, newTestValue)
         testChain(ds, keyList, newTestValue)
 
         # Do not overwrite if overwriteLast is False
         noOverWriteTestValue = 'This should not be written'
-        ds.setItemChained(keyList, noOverWriteTestValue, overwriteLast=False)
+        ds.set_item_chained(keyList, noOverWriteTestValue, overwriteLast=False)
         testChain(ds, keyList, newTestValue)
 
         # ['a', 'b', 'another', 'xxx']
         otherKeyList = ['a', 'b', 'another', 'xxx']
         otherTestValue = [1, 2, 3, 'ahoy']
-        ds.setItemChained(otherKeyList, otherTestValue)
+        ds.set_item_chained(otherKeyList, otherTestValue)
         testChain(ds, otherKeyList, otherTestValue)
         testChain(ds, keyList, newTestValue) # Should not be overwritten
 
         # Single item in keyList
         singleList = ['single']
-        ds.setItemChained(singleList, otherTestValue)
+        ds.set_item_chained(singleList, otherTestValue)
         testChain(ds, singleList, otherTestValue)
 
-        # Test using getItemChained()
-        assert ds.getItemChained(keyList) == newTestValue
-        assert ds.getItemChained(otherKeyList) == otherTestValue
-        assert ds.getItemChained(singleList) == otherTestValue
+        # Test using get_item_chained()
+        assert ds.get_item_chained(keyList) == newTestValue
+        assert ds.get_item_chained(otherKeyList) == otherTestValue
+        assert ds.get_item_chained(singleList) == otherTestValue
 
         ds.close()

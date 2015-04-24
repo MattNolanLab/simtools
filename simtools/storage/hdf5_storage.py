@@ -45,7 +45,8 @@ class HDF5DataStorage(DataStorage):
     Also, the following might have unexpected results, if the list stored in
     the HDF5 file is a compound list::
 
-        1. >>> tmp = d['listKey']  # tmp now contains a shallow copy of the list
+        1. >>> tmp = d['listKey']  # tmp now contains a shallow copy of the
+                                   # list
         3. >>> d['anotherKey'] = tmp
 
     The reason for this is that tmp contains only the first level shallow copy
@@ -81,12 +82,10 @@ class HDF5DataStorage(DataStorage):
         '''
         try:
             f = h5py.File(filePath, mode)
-        except IOError as e:
-            modLogger.error(\
-                    'Cannot open file in mode \'{0}\': {1}'.format(mode, filePath))
+        except IOError:
+            modLogger.error('Cannot open file in mode %s: %s', mode, filePath)
             raise
         return HDF5MapStorage(f, f['/'])
-
 
     def __init__(self, fileObj, grp):
         '''
@@ -96,7 +95,6 @@ class HDF5DataStorage(DataStorage):
         '''
         self._group = grp
         self._file  = fileObj
-
 
     def _getitem(self, dataSet):
         '''
@@ -112,24 +110,23 @@ class HDF5DataStorage(DataStorage):
            object.
         '''
         val = dataSet
-        if (isinstance(val, h5py.Group)):
-            if (val.attrs['type'] == 'dict'):
+        if isinstance(val, h5py.Group):
+            if val.attrs['type'] == 'dict':
                 return HDF5MapStorage(self._file, val)
-            elif (val.attrs['type'] == 'list'):
+            elif val.attrs['type'] == 'list':
                 return HDF5ListStorage(self._file, val)
             else:
-                raise Exception("Unknown type attribute encountered while " +
-                        "parsing the get request. Please check whether your " +
-                        "HDF5 file is in correct format")
+                raise Exception("Unknown type attribute encountered while "
+                                "parsing the get request. Please check "
+                                "whether your HDF5 file is in correct format")
         else:
             try:
                 return val.value
             except ValueError:
-                if (len(val) == 0):
+                if len(val) == 0:
                     return np.array([], dtype=val.dtype)
                 else:
                     raise
-
 
     def _createDataMember(self, name, value, grp):
         '''
@@ -147,12 +144,12 @@ class HDF5DataStorage(DataStorage):
               for the performance limitations of storing lists.
         '''
         try:
-            if (isinstance(value, MutableMapping)):
+            if isinstance(value, MutableMapping):
                 newGrp = grp.create_group(name)
                 newGrp.attrs['type'] = 'dict'
                 for k, v in iteritems(value):
                     self._createDataMember(k, v, newGrp)
-            elif (isinstance(value, MutableSequence)):
+            elif isinstance(value, MutableSequence):
                 newGrp = grp.create_group(name)
                 newGrp.attrs['type'] = 'list'
                 it = 0
@@ -161,32 +158,31 @@ class HDF5DataStorage(DataStorage):
                     it += 1
             else:
                 try:
-                    grp.create_dataset(name=name, data=value, compression="gzip")
+                    grp.create_dataset(name=name, data=value,
+                                       compression="gzip")
                 except TypeError:
                     grp.create_dataset(name=name, data=value)
                 except ValueError:
-                    mxShape = tuple([None]*value.ndim)
-                    chunks = tuple([1]*value.ndim)
+                    mxShape = tuple([None] * value.ndim)
+                    chunks = tuple([1] * value.ndim)
                     grp.create_dataset(name=name, shape=value.shape,
-                            data=value, maxshape=mxShape, chunks=chunks,
-                            compression="gzip")
+                                       data=value, maxshape=mxShape,
+                                       chunks=chunks, compression="gzip")
         except TypeError:
             print("Could not create a data member %s" % name)
             raise
 
-
-    def getItemChained(self, keyTuple):
+    def get_item_chained(self, keyTuple):
         '''
         Return an item at the and of a chain of keys, defined in ``keyTuple``
         '''
         l = len(keyTuple)
-        if (l == 0):
+        if l == 0:
             raise ValueError('Cannot chain index with an empty list of keys.')
-        elif (l == 1):
+        elif l == 1:
             return self[keyTuple[0]]
         else:
-            return self[keyTuple[0]].getItemChained(keyTuple[1:])
-
+            return self[keyTuple[0]].get_item_chained(keyTuple[1:])
 
     def close(self):
         '''
@@ -198,7 +194,6 @@ class HDF5DataStorage(DataStorage):
         '''
         self._file.close()
 
-
     def flush(self):
         '''
         Flush all the data to the file stream.
@@ -206,22 +201,19 @@ class HDF5DataStorage(DataStorage):
         self._file.flush()
 
 
-
 class HDF5MapStorage(HDF5DataStorage, MutableMapping):
     '''
     Dictionary-like HDF5 DataStorage implementation
     '''
-
     def __init__(self, fileObj, grp):
         HDF5DataStorage.__init__(self, fileObj, grp)
 
     def __setitem__(self, key, value):
-        if (key in self._group):
-            del self._group[key] # TODO: this is costly operation
+        if key in self._group:
+            del self._group[key]  # TODO: this is costly operation
         self._createDataMember(key, value, self._group)
 
     def __getitem__(self, key):
-        #print("__getitem__({0}), group: {1}".format(key, self._group.name))
         return self._getitem(self._group[key])
 
     def __delitem__(self, key):
@@ -233,8 +225,7 @@ class HDF5MapStorage(HDF5DataStorage, MutableMapping):
     def __iter__(self):
         return iter(self._group.keys())
 
-
-    def setItemChained(self, keyTuple, value, overwriteLast=True):
+    def set_item_chained(self, keyTuple, value, overwriteLast=True):
         '''
         Set ``value`` into ``keyTuple[-1]``. ``keyTuple`` must contain only
         strings, specifying dictionary keys. The semantic of this method is the
@@ -247,27 +238,26 @@ class HDF5MapStorage(HDF5DataStorage, MutableMapping):
            dictionaries. If they exist, do not overwrite.
         '''
         l = len(keyTuple)
-        if (l == 0):
+        if l == 0:
             raise ValueError("keyTuple must contain at least one item")
-        elif (l == 1):
-            if (not isinstance(keyTuple[0], str)):
-                raise TypeError('All the keys in the keyTuple list must be strings.')
+        elif l == 1:
+            if not isinstance(keyTuple[0], str):
+                raise TypeError('All the keys in the keyTuple list must be '
+                                'strings.')
             if keyTuple[0] not in self.keys() or overwriteLast:
                 self[keyTuple[0]] = value
         else:
             firstKey = keyTuple[0]
-            if (not isinstance(firstKey, str)):
-                raise TypeError('All the keys in the keyTuple list must be strings.')
+            if not isinstance(firstKey, str):
+                raise TypeError('All the keys in the keyTuple list must be '
+                                'strings.')
             if firstKey in self.keys():
-                self[firstKey].setItemChained(keyTuple[1:], value,
-                        overwriteLast=overwriteLast)
+                self[firstKey].set_item_chained(keyTuple[1:], value,
+                                                overwriteLast=overwriteLast)
             else:
                 self[firstKey] = {}
-                self[firstKey].setItemChained(keyTuple[1:], value,
-                        overwriteLast=overwriteLast)
-
-
-
+                self[firstKey].set_item_chained(keyTuple[1:], value,
+                                                overwriteLast=overwriteLast)
 
 
 class HDF5ListStorage(HDF5DataStorage, MutableSequence):
@@ -278,43 +268,41 @@ class HDF5ListStorage(HDF5DataStorage, MutableSequence):
         HDF5DataStorage.__init__(self, fileObj, grp)
 
     def __setitem__(self, index, value):
-        if (isinstance(index, slice)):
+        if isinstance(index, slice):
             raise TypeError('Slicing is not supported!')
         index = str(index)
-        if (index in self._group):
-            del self._group[index] # TODO: this is costly operation
+        if index in self._group:
+            del self._group[index]  # TODO: this is costly operation
             self._createDataMember(index, value, self._group)
         else:
             raise IndexError
 
     def __getitem__(self, index):
-        if (isinstance(index, slice)):
+        if isinstance(index, slice):
             raise TypeError('Slicing is not supported!')
-        if (index < 0):
+        if index < 0:
             index = len(self._group) + index
         return self._getitem(self._group[str(index)])
 
     def __delitem__(self, index):
-        raise NotImplementedError('Deleting items in an HDF5 stored list is' +\
-                ' not as easy as you think!')
+        raise NotImplementedError('Deleting items in an HDF5 stored list is'
+                                  ' not as easy as you think!')
 
     def insert(self, index, value):
-        raise NotImplementedError('Inserting items in an HDF5 stored list is' +\
-                ' not as easy as you think!')
+        raise NotImplementedError('Inserting items in an HDF5 stored list is'
+                                  ' not as easy as you think!')
 
     def append(self, value):
         index = len(self)
         self._createDataMember(str(index), value, self._group)
 
-
-    def setItemChained(self, keyTuple, value):
+    def set_item_chained(self, keyTuple, value):
         '''
         This method does not make sence in HDF5ListStorage. Its semantic is
         only to create a hiearchy of dictionaries, e.g. as in
-        :meth:`HDF5MapStorage.setItemChained`.
+        :meth:`HDF5MapStorage.set_item_chained`.
         '''
-        raise RuntimeError("setItemChained() cannot be used here.")
-
+        raise RuntimeError("set_item_chained() cannot be used here.")
 
     def __len__(self):
         return len(self._group)
@@ -322,7 +310,7 @@ class HDF5ListStorage(HDF5DataStorage, MutableSequence):
     def __iter__(self):
         idx = 0
         stop = len(self)
-        while (idx < stop):
+        while idx < stop:
             yield self[idx]
             idx += 1
 
@@ -334,13 +322,12 @@ class HDF5ListStorage(HDF5DataStorage, MutableSequence):
         return ret
 
     def __eq__(self, other):
-        if (len(self) != len(other)):
+        if len(self) != len(other):
             return False
         for idx in xrange(len(self)):
-            if (self[idx] != other[idx]):
+            if self[idx] != other[idx]:
                 return False
         return True
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
