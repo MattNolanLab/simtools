@@ -237,3 +237,20 @@ class TestHDF5Storage(object):
         assert ds.get_item_chained(singleList) == otherTestValue
 
         ds.close()
+
+    @pytest.mark.xfail
+    def test_chained_getter_key_tuple(self, tmpdir):
+        '''Test that chained getter rejects non-string arguments.'''
+        ds = open_storage(tmpdir, 'test_chained_setter.h5', 'w')
+        ds['one'] = {}
+        ds['one']['blabla'] = 123
+        with pytest.raises(TypeError):
+            ds.get_item_chained(['one', 23, 'four'])
+        ds.close()
+
+    def test_chained_setter_key_tuple(self, tmpdir):
+        '''Test that chained setter rejects non-string arguments.'''
+        ds = open_storage(tmpdir, 'test_chained_setter.h5', 'w')
+        with pytest.raises(TypeError):
+            ds.set_item_chained(['one', 23, 'four'], 10)
+        ds.close()
