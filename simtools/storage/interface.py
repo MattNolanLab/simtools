@@ -3,6 +3,7 @@ class(es)).
 '''
 from __future__ import absolute_import, print_function, division
 
+
 class DataStorage(object):
     '''
     Class for saving and loading data structures transparently.
@@ -20,7 +21,6 @@ class DataStorage(object):
     chunks of data from a dictionary can be quite inefficient. The copy
     semantics of the non-compound data access can be changed in the future.
     '''
-
     @staticmethod
     def open(filePath, mode='w'):
         '''
@@ -35,5 +35,3 @@ class DataStorage(object):
         '''
         from . import hdf5_storage
         return hdf5_storage.HDF5DataStorage.factory(filePath, mode=mode)
-
-
